@@ -1,0 +1,129 @@
+.scheduling-page {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xl);
+}
+
+.scheduling-grid {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: var(--spacing-lg);
+}
+
+.timeline-card,
+.conflicts-card {
+  min-width: 0;
+}
+
+.date-selector {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  margin-bottom: var(--spacing-lg);
+}
+
+.date-selector label {
+  color: var(--text-secondary);
+  font-size: 0.875rem;
+}
+
+.timeline {
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+}
+
+.timeline-header {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  background-color: var(--bg-elevated);
+  border-bottom: 1px solid var(--border-color);
+}
+
+.time-slot {
+  padding: var(--spacing-sm);
+  text-align: center;
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  border-right: 1px solid var(--border-color);
+}
+
+.time-slot:last-child {
+  border-right: none;
+}
+
+.timeline-body {
+  padding: var(--spacing-md);
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+  min-height: 200px;
+}
+
+.timeline-event {
+  padding: var(--spacing-sm) var(--spacing-md);
+  border-radius: var(--radius-md);
+  border-left: 3px solid;
+}
+
+.timeline-event.status-scheduled {
+  background-color: rgba(59, 130, 246, 0.1);
+  border-color: var(--accent-info);
+}
+
+.timeline-event.status-in_progress {
+  background-color: rgba(245, 158, 11, 0.1);
+  border-color: var(--accent-warning);
+}
+
+.timeline-event.status-completed {
+  background-color: rgba(34, 197, 94, 0.1);
+  border-color: var(--accent-success);
+}
+
+.event-time {
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+}
+
+.event-details {
+  font-size: 0.875rem;
+  color: var(--text-primary);
+  margin-top: var(--spacing-xs);
+}
+
+.conflict-item {
+  display: flex;
+  gap: var(--spacing-sm);
+  padding: var(--spacing-md);
+  border-radius: var(--radius-md);
+  margin-bottom: var(--spacing-sm);
+}
+
+.conflict-item:last-child {
+  margin-bottom: 0;
+}
+
+.conflict-item.warning {
+  background-color: rgba(245, 158, 11, 0.1);
+  border: 1px solid rgba(245, 158, 11, 0.3);
+  color: var(--accent-warning);
+}
+
+.conflict-item.info {
+  background-color: rgba(59, 130, 246, 0.1);
+  border: 1px solid rgba(59, 130, 246, 0.3);
+  color: var(--accent-info);
+}
+
+.conflict-item p {
+  color: var(--text-primary);
+  margin-top: var(--spacing-xs);
+  font-size: 0.8125rem;
+}
+
+@media (max-width: 968px) {
+  .scheduling-grid {
+    grid-template-columns: 1fr;
+  }
+}

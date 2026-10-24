@@ -1,0 +1,11 @@
+.reports-page {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xl);
+}
+
+.reports-grid {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xl);
+}
