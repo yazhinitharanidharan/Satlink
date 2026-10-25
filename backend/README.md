@@ -1,4 +1,4 @@
-﻿# SATLINK Backend
+# SATLINK Backend
 
 FastAPI backend for the SATLINK Satellite Communication & Ground Station Management Platform.
 
@@ -41,9 +41,17 @@ Do not commit .env to GitHub.
 
 ### 5. Prepare the database
 
-Create and initialize the satlink_db PostgreSQL database using the SATLINK team's database schema and seed data.
+Create a new, empty PostgreSQL database named `satlink_db`.
 
-Note: Database setup scripts are not yet included in this backend folder.
+Import the included database schema from the backend directory:
+
+    & "C:\Program Files\PostgreSQL\18\bin\psql.exe" -U postgres -h localhost -p 5432 -d satlink_db -v ON_ERROR_STOP=1 -f satlink_schema.sql
+
+Enter your PostgreSQL password when prompted.
+
+This creates the database tables and relationships, but does not include initial users or reference data. Those records must be added separately.
+
+**Important:** Import this schema only into a new, empty database. Do not run it against your existing working database.
 
 ### 6. Start the API
 
