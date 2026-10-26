@@ -22,7 +22,7 @@ const Antennas = () => {
     { header: 'ID', accessor: 'ant_id', width: '70px' },
     { header: 'Antenna', accessor: 'ant_name' },
     { header: 'Ground Station', accessor: 'gs_id', render: (v) => stations.find(s => s.gs_id === v)?.gs_name || '—' },
-    { header: 'Status', accessor: 'status', render: (v) => <Badge variant={v === 'available' ? 'success' : v === 'in_use' ? 'warning' : 'danger'}>{v.replace('_', ' ')}</Badge> },
+    { header: 'Status', accessor: 'status', render: (v) => <Badge variant={v === 'available' ? 'success' : v === 'in_use' ? 'warning' : 'danger'}>{(v || 'available').replace('_', ' ')}</Badge> },
     { header: 'Frequency', accessor: 'frequency_range' },
     { header: 'Diameter (m)', accessor: 'diameter_m' },
   ];

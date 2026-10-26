@@ -1,5 +1,5 @@
-import { createContext, useContext, useState, useEffect } from 'react';
-import * as mockData from '../data/mockData';
+import { createContext, useCallback, useContext, useEffect, useState } from 'react';
+import { apiClient } from '../services/api';
 
 const DataContext = createContext();
 
@@ -11,57 +11,83 @@ export const useData = () => {
   return context;
 };
 
+const collectionPath = (collection) => `/data/${encodeURIComponent(collection)}`;
+
 export const DataProvider = ({ children }) => {
-  const [data, setData] = useState(() => {
-    const saved = localStorage.getItem('satlink_data');
-    if (saved) {
-      try {
-        const parsed = JSON.parse(saved);
-        return { ...parsed, _source: 'mock', _mode: 'demo' };
-      } catch {
-        return { ...mockData, _source: 'mock', _mode: 'demo' };
-      }
+  const [data, setData] = useState({});
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+
+  const fetchSnapshot = useCallback(async (showLoading = true) => {
+    if (showLoading) setLoading(true);
+    setError('');
+
+    try {
+      const snapshot = await apiClient.get('/data');
+      setData(snapshot || {});
+      return snapshot;
+    } catch (requestError) {
+      setError(
+        requestError?.message ||
+          'Unable to load application data from the SATLINK backend.'
+      );
+      throw requestError;
+    } finally {
+      if (showLoading) setLoading(false);
     }
-    return { ...mockData, _source: 'mock', _mode: 'demo' };
-  });
+  }, []);
 
   useEffect(() => {
-    localStorage.setItem('satlink_data', JSON.stringify(data));
-  }, [data]);
+    fetchSnapshot().catch(() => {
+      // Error is exposed through the provider state.
+    });
+  }, [fetchSnapshot]);
 
-  const create = (collection, item) => {
-    const idKey = Object.keys(item).find(k => k.includes('_id'));
-    const newItem = { ...item };
-    if (idKey && !newItem[idKey]) {
-      newItem[idKey] = Date.now();
-    }
-    setData(prev => ({
-      ...prev,
-      [collection]: [...(prev[collection] || []), newItem]
-    }));
-    return newItem;
+  const refresh = () =>
+    fetchSnapshot().catch(() => {
+      // Error is exposed through the provider state.
+    });
+
+  const reloadAfterMutation = () =>
+    fetchSnapshot(false).catch(() => {
+      // The mutation succeeded; a refresh failure is shown in the error banner.
+    });
+
+  const create = async (collection, item) => {
+    await apiClient.post(collectionPath(collection), item);
+    await reloadAfterMutation();
   };
 
-  const update = (collection, idKey, id, updates) => {
-    setData(prev => ({
-      ...prev,
-      [collection]: (prev[collection] || []).map(item => 
-        item[idKey] == id ? { ...item, ...updates } : item
-      )
-    }));
+  const update = async (collection, _idKey, id, updates) => {
+    await apiClient.put(
+      `${collectionPath(collection)}/${encodeURIComponent(id)}`,
+      updates
+    );
+    await reloadAfterMutation();
   };
 
-  const remove = (collection, idKey, id) => {
-    setData(prev => ({
-      ...prev,
-      [collection]: (prev[collection] || []).filter(item => item[idKey] != id)
-    }));
+  const remove = async (collection, _idKey, id) => {
+    await apiClient.delete(
+      `${collectionPath(collection)}/${encodeURIComponent(id)}`
+    );
+    await reloadAfterMutation();
   };
 
   const getAll = (collection) => data[collection] || [];
 
   return (
-    <DataContext.Provider value={{ data, create, update, remove, getAll, setData }}>
+    <DataContext.Provider
+      value={{
+        data,
+        loading,
+        error,
+        refresh,
+        create,
+        update,
+        remove,
+        getAll,
+      }}
+    >
       {children}
     </DataContext.Provider>
   );

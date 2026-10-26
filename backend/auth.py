@@ -1,5 +1,6 @@
 ﻿import os
 from datetime import datetime, timedelta, timezone
+from pathlib import Path
 
 import jwt
 from dotenv import load_dotenv
@@ -7,7 +8,7 @@ from fastapi import HTTPException, status
 from jwt import InvalidTokenError
 from pwdlib import PasswordHash
 
-load_dotenv()
+load_dotenv(Path(__file__).with_name(".env"))
 
 password_hash = PasswordHash.recommended()
 
@@ -84,7 +85,13 @@ def get_current_user(token: str = Depends(oauth2_scheme)):
             with conn.cursor(row_factory=dict_row) as cur:
                 cur.execute(
                     """
-                    SELECT user_id, user_name, role
+                    SELECT
+                        user_id,
+                        user_name,
+                        role,
+                        email,
+                        full_name,
+                        status
                     FROM public.app_user
                     WHERE user_id = %s
                     """,
@@ -103,6 +110,12 @@ def get_current_user(token: str = Depends(oauth2_scheme)):
             status_code=401,
             detail="User no longer exists",
             headers={"WWW-Authenticate": "Bearer"}
+        )
+
+    if user.get("status") and user["status"].lower() != "active":
+        raise HTTPException(
+            status_code=403,
+            detail="User account is not active"
         )
 
     return user

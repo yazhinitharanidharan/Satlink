@@ -16,9 +16,16 @@ const SchedulingRecommendations = () => {
   const bands = getAll('frequencyBands');
   const [toast, setToast] = useState(null);
 
-  const decide = (rec, status) => {
-    update('schedulingRecommendations', 'rec_id', rec.rec_id, { status });
-    setToast({ message: `Recommendation #${rec.rec_id} ${status}`, type: status === 'accepted' ? 'success' : 'warning' });
+  const decide = async (rec, status) => {
+    try {
+      await update('schedulingRecommendations', 'rec_id', rec.rec_id, { status });
+      setToast({ message: `Recommendation #${rec.rec_id} ${status}`, type: status === 'accepted' ? 'success' : 'warning' });
+    } catch (error) {
+      setToast({
+        message: error?.message || 'Unable to update recommendation.',
+        type: 'error',
+      });
+    }
   };
 
   const columns = [
@@ -27,13 +34,13 @@ const SchedulingRecommendations = () => {
     { header: 'Station', accessor: 'gs_id', render: (v) => stations.find(s => s.gs_id === v)?.gs_name || 'TBD' },
     { header: 'Proposed Start', accessor: 'proposed_start', render: (v) => v ? new Date(v).toLocaleString() : '—' },
     { header: 'Band', accessor: 'band_id', render: (v) => bands.find(b => b.band_id === v)?.band_name || '—' },
-    { header: 'Confidence', accessor: 'confidence_score', render: (v) => <Badge variant={v >= 0.9 ? 'success' : v >= 0.8 ? 'warning' : 'info'}>{(v * 100).toFixed(0)}%</Badge> },
-    { header: 'Status', accessor: 'status', render: (v) => <Badge variant={v === 'accepted' ? 'success' : v === 'rejected' ? 'danger' : 'warning'}>{v}</Badge> },
+    { header: 'Confidence', accessor: 'confidence_score', render: (v) => v == null ? '—' : <Badge variant={v >= 0.9 ? 'success' : v >= 0.8 ? 'warning' : 'info'}>{(Number(v) * 100).toFixed(0)}%</Badge> },
+    { header: 'Status', accessor: 'status', render: (v) => <Badge variant={v === 'accepted' ? 'success' : v === 'rejected' ? 'danger' : 'warning'}>{v || 'pending'}</Badge> },
     { header: 'Actions', accessor: 'actions', sortable: false, render: (_, row) => (
       row.status === 'pending' ? (
         <div className="action-buttons">
-          <Button variant="success" size="sm" icon={CheckCircle} onClick={() => decide(row, 'accepted')}>Accept</Button>
-          <Button variant="danger" size="sm" icon={XCircle} onClick={() => decide(row, 'rejected')}>Reject</Button>
+          <Button variant="success" size="sm" icon={CheckCircle} onClick={() => { decide(row, 'accepted'); }}>Accept</Button>
+          <Button variant="danger" size="sm" icon={XCircle} onClick={() => { decide(row, 'rejected'); }}>Reject</Button>
         </div>
       ) : <span className="processed-text">Processed</span>
     )},
@@ -44,7 +51,7 @@ const SchedulingRecommendations = () => {
       <div className="page-header">
         <div>
           <h1 className="page-title">Scheduling Recommendations</h1>
-          <p className="page-subtitle">Simulated scheduling suggestions. These are demonstration recommendations, not a live AI engine.</p>
+          <p className="page-subtitle">Scheduling suggestions stored in SATLINK. Decisions are saved to the database.</p>
         </div>
       </div>
 
@@ -55,7 +62,7 @@ const SchedulingRecommendations = () => {
         <Card className="stat-card"><div className="stat-content"><div className="stat-info"><div className="stat-value">{recommendations.filter(r => r.status === 'rejected').length}</div><div className="stat-label">Rejected</div></div></div></Card>
       </div>
 
-      <Card title="Recommendations" subtitle="Accepting a recommendation is a demo operation and does not create a session.">
+      <Card title="Recommendations" subtitle="Accepting or rejecting a recommendation updates its stored status.">
         <DataTable
           columns={columns}
           data={recommendations}

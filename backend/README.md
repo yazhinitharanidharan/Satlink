@@ -15,7 +15,7 @@ FastAPI backend for the SATLINK Satellite Communication & Ground Station Managem
 
 - Python 3.11+
 - PostgreSQL
-- A SATLINK database with the required tables and initial user data
+- The base schema and UI integration migration applied to a SATLINK database
 
 ## Local setup
 
@@ -47,13 +47,23 @@ Import the included database schema from the backend directory:
 
     & "C:\Program Files\PostgreSQL\18\bin\psql.exe" -U postgres -h localhost -p 5432 -d satlink_db -v ON_ERROR_STOP=1 -f satlink_schema.sql
 
+Then apply the UI integration migration:
+
+    & "C:\Program Files\PostgreSQL\18\bin\psql.exe" -U postgres -h localhost -p 5432 -d satlink_db -v ON_ERROR_STOP=1 -f satlink_ui_integration.sql
+
 Enter your PostgreSQL password when prompted.
 
-This creates the database tables and relationships, but does not include initial users or reference data. Those records must be added separately.
+The migration adds the nullable columns used by the frontend and is safe to run more than once. The schema does not include initial users or reference data.
 
-**Important:** Import this schema only into a new, empty database. Do not run it against your existing working database.
+**Important:** Import the base schema only into a new, empty database. Do not run it against your existing working database.
 
-### 6. Start the API
+### 6. Create the first administrator
+
+python create_admin.py --username admin --email admin@satlink.local
+
+You will be prompted for a password of at least 8 characters.
+
+### 7. Start the API
 
 python -m uvicorn main:app --reload
 

@@ -24,7 +24,7 @@ const Dashboard = () => {
     { label: 'Active Satellites', value: satellites.filter(s => s.status === 'operational').length, icon: Satellite, tone: 'satellites', path: '/satellites' },
     { label: 'Ground Stations', value: groundStations.length, icon: Radio, tone: 'stations', path: '/ground-stations' },
     { label: 'Available Antennas', value: antennas.filter(a => a.status === 'available').length, icon: Antenna, tone: 'antennas', path: '/antennas' },
-    { label: 'Upcoming Sessions', value: sessions.filter(s => s.status === 'scheduled' || s.status === 'in_progress').length, icon: Calendar, tone: 'sessions', path: '/scheduling' },
+    { label: 'Upcoming Sessions', value: sessions.filter(s => ['scheduled', 'in_progress'].includes(s.status) && s.end_time && new Date(s.end_time).getTime() >= Date.now()).length, icon: Calendar, tone: 'sessions', path: '/scheduling' },
     { label: 'Active Alerts', value: alerts.filter(a => a.status === 'unread').length, icon: AlertTriangle, tone: 'alerts', path: '/alerts' },
   ];
 
@@ -56,8 +56,14 @@ const Dashboard = () => {
       battery: t.value,
     }));
 
+  const now = Date.now();
   const upcomingSessions = [...sessions]
-    .filter(s => s.status !== 'cancelled')
+    .filter(
+      (s) =>
+        ['scheduled', 'in_progress'].includes(s.status) &&
+        s.end_time &&
+        new Date(s.end_time).getTime() >= now
+    )
     .sort((a, b) => new Date(a.start_time) - new Date(b.start_time))
     .slice(0, 6);
 
@@ -70,9 +76,9 @@ const Dashboard = () => {
       <div className="dashboard-header">
         <div>
           <h1 className="page-title">Mission Control Dashboard</h1>
-          <p className="page-subtitle">Operational overview from the local demonstration dataset — not live telemetry.</p>
+          <p className="page-subtitle">Operational overview from the SATLINK database.</p>
         </div>
-        <Badge variant="warning">Demo data</Badge>
+        <Badge variant="success">Live data</Badge>
       </div>
 
       <div className="stats-grid">
@@ -97,7 +103,7 @@ const Dashboard = () => {
       </div>
 
       <div className="dashboard-grid">
-        <Card title="Satellite Telemetry Trend" subtitle="Battery voltage — sample demonstration data" className="chart-card">
+        <Card title="Satellite Telemetry Trend" subtitle="Battery voltage over time" className="chart-card">
           {telemetryTrendData.length === 0 ? (
             <div className="chart-placeholder">No telemetry records available.</div>
           ) : (
@@ -179,7 +185,7 @@ const Dashboard = () => {
                       <td>{groundStations.find(x => x.gs_id === s.gs_id)?.gs_name || '—'}</td>
                       <td>{new Date(s.start_time).toLocaleString()}</td>
                       <td>{bands.find(b => b.band_id === s.band_id)?.band_name || '—'}</td>
-                      <td><Badge variant={s.status === 'completed' ? 'success' : s.status === 'in_progress' ? 'warning' : 'info'}>{s.status.replace('_', ' ')}</Badge></td>
+                      <td><Badge variant={s.status === 'completed' ? 'success' : s.status === 'in_progress' ? 'warning' : 'info'}>{(s.status || 'scheduled').replace('_', ' ')}</Badge></td>
                       <td><ArrowRight size={14} className="row-arrow" /></td>
                     </tr>
                   ))}

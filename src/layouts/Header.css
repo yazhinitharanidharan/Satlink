@@ -291,6 +291,14 @@
   font-size: 0.8125rem;
 }
 
+.dropdown-error {
+  padding: var(--spacing-sm) var(--spacing-md);
+  border-bottom: 1px solid var(--border-color);
+  background-color: rgba(239, 68, 68, 0.1);
+  color: #fca5a5;
+  font-size: 0.75rem;
+}
+
 .notification-item {
   display: flex;
   gap: var(--spacing-sm);

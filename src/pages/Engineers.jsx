@@ -24,7 +24,7 @@ const Engineers = () => {
     { header: 'Role', accessor: 'role' },
     { header: 'Specialization', accessor: 'specialization' },
     { header: 'Email', accessor: 'email' },
-    { header: 'Status', accessor: 'status', render: (v) => <Badge variant={v === 'active' ? 'success' : v === 'on_call' ? 'warning' : 'default'}>{v.replace('_', ' ')}</Badge> },
+    { header: 'Status', accessor: 'status', render: (v) => <Badge variant={v === 'active' ? 'success' : v === 'on_call' ? 'warning' : 'default'}>{(v || 'unknown').replace('_', ' ')}</Badge> },
     { header: 'Assignments', accessor: 'assignments', sortable: false, render: (_, row) => assignments.filter(a => a.eng_id === row.eng_id).length },
   ];
 

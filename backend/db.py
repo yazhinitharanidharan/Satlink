@@ -1,15 +1,18 @@
 
 import os
+from pathlib import Path
+
 import psycopg
 from dotenv import load_dotenv
 
-load_dotenv()
+load_dotenv(Path(__file__).with_name(".env"))
 
 def get_connection():
     return psycopg.connect(
         host=os.getenv("DB_HOST", "localhost"),
         port=os.getenv("DB_PORT", "5432"),
-        dbname=os.getenv("DB_NAME", "satlink"),
+        dbname=os.getenv("DB_NAME", "satlink_db"),
         user=os.getenv("DB_USER", "postgres"),
-        password=os.getenv("DB_PASSWORD")
+        password=os.getenv("DB_PASSWORD"),
+        connect_timeout=int(os.getenv("DB_CONNECT_TIMEOUT", "5"))
     )

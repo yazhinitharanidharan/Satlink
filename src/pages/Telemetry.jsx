@@ -26,7 +26,10 @@ const Telemetry = () => {
   const [values, setValues] = useState({ measurement_type: 'Battery_Voltage', unit: 'V' });
   const [errors, setErrors] = useState({});
 
-  const types = [...new Set(logs.map(l => l.measurement_type))];
+  const loggedTypes = [...new Set(logs.map(l => l.measurement_type))];
+  const types = loggedTypes.length
+    ? loggedTypes
+    : ['Battery_Voltage', 'Temperature', 'Power_Output'];
 
   const chartData = logs
     .filter(l => typeFilter === 'all' || l.measurement_type === typeFilter)
@@ -53,28 +56,33 @@ const Telemetry = () => {
     )},
   ];
 
-  const handleCreate = (e) => {
+  const handleCreate = async (e) => {
     e.preventDefault();
     const errs = {};
-    if (!values.sat_id) errs.sat_id = 'Satellite is required';
+    if (!values.session_id) errs.session_id = 'Session is required';
     if (!values.timestamp) errs.timestamp = 'Timestamp is required';
     if (values.value === '' || values.value == null) errs.value = 'Value is required';
     if (!values.measurement_type) errs.measurement_type = 'Measurement type is required';
     setErrors(errs);
     if (Object.keys(errs).length) return;
-    const maxId = logs.reduce((m, l) => Math.max(m, l.tel_id), 0);
-    create('telemetryLogs', {
-      tel_id: maxId + 1,
-      sat_id: Number(values.sat_id),
-      session_id: values.session_id || null,
-      timestamp: values.timestamp,
-      measurement_type: values.measurement_type,
-      value: Number(values.value),
-      unit: values.unit || '',
-    });
-    setCreateOpen(false);
-    setValues({ measurement_type: 'Battery_Voltage', unit: 'V' });
-    setToast({ message: 'Telemetry record created', type: 'success' });
+
+    try {
+      await create('telemetryLogs', {
+        session_id: values.session_id,
+        timestamp: values.timestamp,
+        measurement_type: values.measurement_type,
+        value: Number(values.value),
+        unit: values.unit || '',
+      });
+      setCreateOpen(false);
+      setValues({ measurement_type: 'Battery_Voltage', unit: 'V' });
+      setToast({ message: 'Telemetry record created', type: 'success' });
+    } catch (error) {
+      setToast({
+        message: error?.message || 'Unable to create telemetry record.',
+        type: 'error',
+      });
+    }
   };
 
   return (
@@ -82,18 +90,18 @@ const Telemetry = () => {
       <div className="page-header">
         <div>
           <h1 className="page-title">Telemetry</h1>
-          <p className="page-subtitle">Spacecraft health and performance records. Sample demonstration data.</p>
+          <p className="page-subtitle">Spacecraft health and performance records stored in SATLINK.</p>
         </div>
         <Button icon={Plus} onClick={() => { setValues({ measurement_type: types[0] || 'Battery_Voltage', unit: 'V' }); setErrors({}); setCreateOpen(true); }}>Add Record</Button>
       </div>
 
       <div className="stats-grid">
         <Card className="stat-card"><div className="stat-content"><div className="stat-info"><div className="stat-value">{logs.length}</div><div className="stat-label">Telemetry Records</div></div></div></Card>
-        <Card className="stat-card"><div className="stat-content"><div className="stat-info"><div className="stat-value">{types.length}</div><div className="stat-label">Measurement Types</div></div></div></Card>
+        <Card className="stat-card"><div className="stat-content"><div className="stat-info"><div className="stat-value">{loggedTypes.length}</div><div className="stat-label">Measurement Types</div></div></div></Card>
         <Card className="stat-card"><div className="stat-content"><div className="stat-info"><div className="stat-value">{new Set(logs.map(l => l.sat_id)).size}</div><div className="stat-label">Satellites Reporting</div></div></div></Card>
       </div>
 
-      <Card title="Telemetry Trend" subtitle="Filtered time series — demonstration data">
+      <Card title="Telemetry Trend" subtitle="Filtered time series">
         <div className="chart-filters">
           <select className="filter-select" value={typeFilter} onChange={(e) => setTypeFilter(e.target.value)} aria-label="Measurement type">
             <option value="all">All Types</option>
@@ -136,8 +144,7 @@ const Telemetry = () => {
       <Modal isOpen={createOpen} onClose={() => setCreateOpen(false)} title="Add Telemetry Record" size="md">
         <form onSubmit={handleCreate} noValidate>
           <div className="form-grid">
-            <FormField label="Satellite" name="sat_id" type="select" value={values.sat_id || ''} onChange={(e) => setValues(v => ({ ...v, sat_id: e.target.value }))} error={errors.sat_id} required options={satellites.map(s => ({ value: s.sat_id, label: s.sat_name }))} />
-            <FormField label="Session" name="session_id" type="select" value={values.session_id || ''} onChange={(e) => setValues(v => ({ ...v, session_id: e.target.value }))} options={sessions.map(s => ({ value: s.session_id, label: s.session_id }))} />
+            <FormField label="Session" name="session_id" type="select" value={values.session_id || ''} onChange={(e) => setValues(v => ({ ...v, session_id: e.target.value }))} error={errors.session_id} required options={sessions.map(s => ({ value: s.session_id, label: `#${s.session_id}` }))} />
             <FormField label="Timestamp" name="timestamp" type="datetime-local" value={values.timestamp || ''} onChange={(e) => setValues(v => ({ ...v, timestamp: e.target.value }))} error={errors.timestamp} required />
             <FormField label="Measurement Type" name="measurement_type" type="select" value={values.measurement_type || ''} onChange={(e) => setValues(v => ({ ...v, measurement_type: e.target.value }))} error={errors.measurement_type} required options={types.map(t => ({ value: t, label: t }))} />
             <FormField label="Value" name="value" type="number" value={values.value ?? ''} onChange={(e) => setValues(v => ({ ...v, value: e.target.value }))} error={errors.value} required />
@@ -167,13 +174,23 @@ const Telemetry = () => {
         isOpen={!!deleting}
         title="Delete Telemetry Record"
         message={deleting ? `Delete measurement ${deleting.tel_id} (${deleting.measurement_type})? This action cannot be undone.` : ''}
-        confirmLabel="Delete"
-        variant="danger"
-        onCancel={() => setDeleting(null)}
-        onConfirm={() => {
-          remove('telemetryLogs', 'tel_id', deleting.tel_id);
-          setDeleting(null);
-          setToast({ message: 'Telemetry record deleted', type: 'success' });
+        confirmText="Delete"
+        confirmVariant="danger"
+        onClose={() => setDeleting(null)}
+        onConfirm={async () => {
+          if (!deleting) return;
+
+          try {
+            await remove('telemetryLogs', 'tel_id', deleting.tel_id);
+            setToast({ message: 'Telemetry record deleted', type: 'success' });
+          } catch (error) {
+            setToast({
+              message: error?.message || 'Unable to delete telemetry record.',
+              type: 'error',
+            });
+          } finally {
+            setDeleting(null);
+          }
         }}
       />
 

@@ -1,126 +1,114 @@
-# SATLINK Frontend
+# SATLINK
 
-AI-driven satellite operations and ground station scheduling platform - Frontend Application
+Satellite operations and ground station scheduling platform built with React, FastAPI and PostgreSQL.
 
-## Overview
+## Stack
 
-SATLINK is a comprehensive web application for managing satellite missions, ground stations, communication scheduling, telemetry monitoring, and operational oversight. This is a React-based frontend designed to integrate with a FastAPI backend and PostgreSQL database.
-
-## Technology Stack
-
-- **Framework**: React 19 with Vite
-- **Routing**: React Router DOM v7
-- **Styling**: CSS with CSS Variables
-- **Icons**: Lucide React
-- **Charts**: Recharts
-- **HTTP Client**: Native Fetch API
+- Frontend: React 19 + Vite, React Router, Recharts, Lucide
+- Backend: FastAPI, psycopg 3, PyJWT, pwdlib (Argon2)
+- Database: PostgreSQL
 
 ## Prerequisites
 
-- Node.js 18+ and npm
-- FastAPI backend running on http://localhost:8000 (optional - app works in demo mode)
+- Node.js 20.19+ (or 22.12+) and npm
+- Python 3.11+
+- PostgreSQL running locally
 
-## Installation
+## Database Setup
 
-1. Clone the repository
-2. Navigate to the frontend directory:
-   ```bash
-   cd satlink-frontend
-   ```
-3. Install dependencies:
-   ```bash
-   npm install
-   ```
-4. Create environment file:
-   ```bash
-   cp .env.example .env
-   ```
-5. Update `.env` with your backend URL if different
+Create the database and load the schema from `backend/`:
 
-## Development
-
-Start the development server:
 ```bash
+createdb -U postgres satlink_db
+psql -U postgres -h localhost -d satlink_db -v ON_ERROR_STOP=1 -f satlink_schema.sql
+psql -U postgres -h localhost -d satlink_db -v ON_ERROR_STOP=1 -f satlink_ui_integration.sql
+```
+
+`satlink_ui_integration.sql` is a non-destructive, idempotent migration that adds the columns used by the UI. Apply it after the base schema.
+
+## Backend Setup
+
+From `backend/`:
+
+```bash
+python -m venv .venv
+.venv\Scripts\activate
+pip install -r requirements.txt
+copy .env.example .env
+```
+
+Edit `.env` and set `DB_PASSWORD` and a long random `JWT_SECRET_KEY`. Then create the first administrator:
+
+```bash
+python create_admin.py --username admin --email admin@satlink.local
+```
+
+Start the API:
+
+```bash
+uvicorn main:app --reload --port 8000
+```
+
+- API docs: http://localhost:8000/docs
+- Health check: http://localhost:8000/health
+
+## Frontend Setup
+
+From the repository root:
+
+```bash
+npm install
+copy .env.example .env
 npm run dev
 ```
 
-The application will be available at http://localhost:5173
+The application opens at http://localhost:5173. `VITE_API_BASE_URL` defaults to `http://localhost:8000`.
 
-## Build
+## Authentication
 
-Create a production build:
-```bash
-npm run build
-```
+Login uses `POST /auth/login` with an OAuth2 form body and stores a JWT in local storage. The app calls `GET /auth/me` on startup to restore the session. Any `401` response clears the session and returns to the login screen.
 
-Preview the production build:
-```bash
-npm run preview
-```
+The first account must be created with `backend/create_admin.py`. Additional accounts can be managed from the Users page by an administrator.
+
+## API Overview
+
+| Endpoint | Purpose |
+| --- | --- |
+| `POST /auth/login` | Obtain an access token |
+| `GET /auth/me` | Current user profile |
+| `GET /data` | Normalized snapshot of all UI collections |
+| `POST /data/{collection}` | Create a record |
+| `PUT /data/{collection}/{id}` | Update a record |
+| `DELETE /data/{collection}/{id}` | Delete a record |
+| `POST /scheduling/sessions` | Booking request with conflict checks |
+| `POST /approvals/{id}/approve` | Approve a booking (Admin) |
+| `POST /approvals/{id}/reject` | Reject a booking (Admin) |
+
+The `/data` layer maps database column names to the field names already used by the frontend. Users writes require the Admin role; session writes require Admin or Operator.
 
 ## Features
 
-### Core Functionality
-- **Dashboard**: Mission control overview with KPIs, charts, and recent activity
-- **Missions**: Manage satellite missions with CRUD operations
-- **Satellites**: Spacecraft inventory and status tracking
-- **Ground Stations & Antennas**: Infrastructure management
-- **Communication Scheduling**: Schedule and manage satellite communication sessions with conflict detection
-- **Telemetry**: Monitor spacecraft health and performance
-- **Alerts**: System notifications and warnings
-- **Reports**: Analytical reports with CSV export
+- Mission, satellite, payload, station, antenna and frequency band management
+- Communication windows, sessions and scheduling recommendations
+- Maintenance, weather, engineers and telemetry records
+- Alerts, reports with CSV export, global search and notifications
+- JWT authentication with role-based write restrictions for users and sessions
+- Conflict warnings for antenna overlaps and planned maintenance
 
-### Key Features
-- **Dark Theme**: Aerospace mission control interface
-- **Responsive Design**: Works on desktop, tablet, and mobile
-- **Demo Mode**: Fully functional with realistic sample data
-- **API Integration Ready**: Centralized service layer for backend integration
-- **Real-time Conflict Detection**: Scheduling conflict warnings
-- **Data Visualization**: Interactive charts with Recharts
+## Verification
 
-## Project Structure
+```bash
+# Frontend
+npm run lint
+npm run build
 
-```
-src/
-├── components/     # Reusable UI components
-├── layouts/        # App shell (Sidebar, Header, Layout)
-├── pages/          # Page components
-├── services/       # API service layer
-├── data/           # Mock data for demo mode
-├── styles/         # Global styles and CSS variables
-└── utils/          # Utility functions
+# Backend (from backend/)
+pytest
 ```
 
-## Mock Data Mode
+## Limitations
 
-The application runs in demo mode by default with internally consistent sample data. All CRUD operations work within the session. To connect to a real backend:
-
-1. Set `USE_MOCK = false` in service files
-2. Configure `VITE_API_BASE_URL` in `.env`
-3. Ensure backend API endpoints match the expected contract
-
-## API Integration
-
-The app expects a FastAPI backend with RESTful endpoints. Key endpoints include:
-- `/missions`, `/satellites`, `/ground-stations`
-- `/sessions`, `/recommendations`
-- `/telemetry`, `/alerts`
-- `/reports/*`
-
-See service files in `src/services/` for detailed API contracts.
-
-## Known Limitations
-
-- Demo mode data is not persisted
-- Some pages are placeholder components (to be expanded)
-- Authentication not implemented
-- Real orbital calculations not included
-- No direct database connection from frontend
-
-## CSV Export
-
-Reports page supports CSV export for mission, station, session, and engineer reports.
-
-## License
-
-This project is for academic purposes as part of DBMS coursework.
+- No real orbital propagation or link-budget calculations
+- Command logs are records only; no commands are transmitted to spacecraft
+- Weather records are stored observations, not a live feed
+- Scheduling recommendations are stored suggestions, not a production AI service

@@ -6,6 +6,7 @@ const Users = () => {
     { name: 'username', label: 'Username', required: true, validate: (v) => v && v.length < 3 ? 'At least 3 characters' : null },
     { name: 'full_name', label: 'Full Name', required: true },
     { name: 'email', label: 'Email', type: 'email', required: true, validate: (v) => v && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v) ? 'Enter a valid email address' : null },
+    { name: 'password', label: 'Password', type: 'password', requiredOnCreate: true, omitIfEmpty: true, fullWidth: true, placeholder: 'Leave blank to keep the current password', display: () => '••••••••', validate: (v) => v && v.length < 8 ? 'At least 8 characters' : null },
     { name: 'role', label: 'Role', type: 'select', required: true, options: () => [
       { value: 'Administrator', label: 'Administrator' },
       { value: 'Operator', label: 'Operator' },
@@ -31,7 +32,7 @@ const Users = () => {
   return (
     <CrudPage
       title="Users"
-      description="User directory and administrative roles. No authentication is implemented in this frontend."
+      description="User directory and administrative roles. Passwords are hashed by the backend and never returned to the browser."
       collection="users"
       idKey="user_id"
       columns={columns}
