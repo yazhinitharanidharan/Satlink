@@ -35,7 +35,7 @@ const Maintenance = () => {
     { header: 'Station', accessor: 'gs_id', render: (v) => stations.find(s => s.gs_id === v)?.gs_name || '—' },
     { header: 'Type', accessor: 'maint_type', render: (v) => <Badge variant="info">{v}</Badge> },
     { header: 'Start', accessor: 'start_date', render: fmt },
-    { header: 'Status', accessor: 'status', render: (v) => <Badge variant={v === 'completed' ? 'success' : v === 'scheduled' ? 'warning' : v === 'cancelled' ? 'danger' : 'info'}>{v.replace('_', ' ')}</Badge> },
+    { header: 'Status', accessor: 'status', render: (v) => <Badge variant={v === 'completed' ? 'success' : v === 'scheduled' ? 'warning' : v === 'cancelled' ? 'danger' : 'info'}>{(v || 'scheduled').replace('_', ' ')}</Badge> },
     { header: 'Engineer', accessor: 'eng_id', render: (v) => engineers.find(e => e.eng_id === v)?.eng_name || '—' },
   ];
 

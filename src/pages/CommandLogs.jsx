@@ -10,8 +10,7 @@ const CommandLogs = () => {
   const fmt = (v) => v ? new Date(v).toLocaleString() : '—';
 
   const fields = [
-    { name: 'session_id', label: 'Session', type: 'select', required: true, options: () => sessions.map(s => ({ value: s.session_id, label: s.session_id })), display: (v) => v || '—' },
-    { name: 'sat_id', label: 'Satellite', type: 'select', required: true, options: () => satellites.map(s => ({ value: s.sat_id, label: s.sat_name })), display: (v) => satellites.find(s => s.sat_id === v)?.sat_name || '—' },
+    { name: 'session_id', label: 'Session', type: 'select', required: true, options: () => sessions.map(s => ({ value: s.session_id, label: `#${s.session_id}` })), display: (v) => v ? `#${v}` : '—' },
     { name: 'command_type', label: 'Command Type', required: true, placeholder: 'e.g. PAYLOAD_CONFIG' },
     { name: 'sent_by', label: 'Sent By', type: 'select', required: true, options: () => engineers.map(e => ({ value: e.eng_id, label: e.eng_name })), display: (v) => engineers.find(e => e.eng_id === v)?.eng_name || '—' },
     { name: 'timestamp', label: 'Timestamp', type: 'datetime-local', required: true, display: fmt },

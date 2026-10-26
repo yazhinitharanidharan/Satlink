@@ -34,6 +34,8 @@ const CrudPage = ({
   const [formValues, setFormValues] = useState(initialValues);
   const [errors, setErrors] = useState({});
   const [toast, setToast] = useState(null);
+  const [saving, setSaving] = useState(false);
+  const [deletingBusy, setDeletingBusy] = useState(false);
 
   const showToast = (message, type = 'success') => setToast({ message, type });
 
@@ -68,7 +70,8 @@ const CrudPage = ({
   const validate = () => {
     const newErrors = {};
     fields.forEach(f => {
-      if (f.required && (formValues[f.name] === '' || formValues[f.name] == null)) {
+      const required = f.required || (!editing && f.requiredOnCreate);
+      if (required && (formValues[f.name] === '' || formValues[f.name] == null)) {
         newErrors[f.name] = `${f.label} is required`;
       }
       if (f.validate) {
@@ -80,36 +83,57 @@ const CrudPage = ({
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!validate()) return;
+    if (!validate() || saving) return;
 
     const processed = {};
     fields.forEach(f => {
       let val = formValues[f.name];
-      if (f.type === 'number') val = Number(val);
+
+      if (editing && f.omitIfEmpty && (val === '' || val == null)) {
+        return;
+      }
+
+      if (f.type === 'number') {
+        val = val === '' || val == null ? null : Number(val);
+      }
+
       processed[f.name] = val;
     });
 
-    if (editing) {
-      update(collection, idKey, editing[idKey], processed);
-      showToast(`${title} record updated`);
-    } else {
-      const newRecord = { ...processed };
-      if (!newRecord[idKey]) {
-        const maxId = records.reduce((max, r) => Math.max(max, Number(r[idKey]) || 0), 0);
-        newRecord[idKey] = maxId + 1;
+    setSaving(true);
+
+    try {
+      if (editing) {
+        await update(collection, idKey, editing[idKey], processed);
+        showToast(`${title} record updated`);
+      } else {
+        await create(collection, processed);
+        showToast(`${title} record created`);
       }
-      create(collection, newRecord);
-      showToast(`${title} record created`);
+      closeModal();
+    } catch (error) {
+      showToast(error?.message || `Unable to save ${title.toLowerCase()} record.`, 'error');
+    } finally {
+      setSaving(false);
     }
-    closeModal();
   };
 
-  const handleDelete = () => {
-    remove(collection, idKey, deleting[idKey]);
-    showToast(`${title} record deleted`);
-    setDeleting(null);
+  const handleDelete = async () => {
+    if (deletingBusy) return;
+
+    setDeletingBusy(true);
+
+    try {
+      await remove(collection, idKey, deleting[idKey]);
+      showToast(`${title} record deleted`);
+      setDeleting(null);
+    } catch (error) {
+      showToast(error?.message || `Unable to delete ${title.toLowerCase()} record.`, 'error');
+    } finally {
+      setDeletingBusy(false);
+    }
   };
 
   const handleView = (row) => {
@@ -204,7 +228,7 @@ const CrudPage = ({
                   value={formValues[field.name] ?? ''}
                   onChange={handleChange}
                   error={errors[field.name]}
-                  required={field.required}
+                  required={field.required || (!editing && field.requiredOnCreate)}
                   options={field.options ? field.options(records) : undefined}
                   placeholder={field.placeholder}
                   rows={field.rows}
@@ -213,8 +237,10 @@ const CrudPage = ({
             ))}
           </div>
           <div className="form-actions">
-            <Button variant="secondary" type="button" onClick={closeModal}>Cancel</Button>
-            <Button variant="primary" type="submit">{editing ? 'Save Changes' : 'Create'}</Button>
+            <Button variant="secondary" type="button" onClick={closeModal} disabled={saving}>Cancel</Button>
+            <Button variant="primary" type="submit" disabled={saving}>
+              {saving ? 'Saving...' : editing ? 'Save Changes' : 'Create'}
+            </Button>
           </div>
         </form>
       </Modal>
@@ -251,7 +277,7 @@ const CrudPage = ({
         onConfirm={handleDelete}
         title={`Delete ${title.replace(/s$/, '')}`}
         message={`Are you sure you want to delete this record? This action cannot be undone.`}
-        confirmText="Delete"
+        confirmText={deletingBusy ? 'Deleting...' : 'Delete'}
       />
 
       {toast && (

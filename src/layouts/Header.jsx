@@ -1,7 +1,8 @@
 import { useState, useMemo, useEffect, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { Menu, Bell, Search, ChevronDown, WifiOff, User, Settings, LogOut, Check, Satellite } from 'lucide-react';
+import { Menu, Bell, Search, ChevronDown, Wifi, WifiOff, User, Settings, LogOut, Check, Satellite } from 'lucide-react';
 import { useData } from '../context/DataContext';
+import { useAuth } from '../context/AuthContext';
 import './Header.css';
 
 const pageTitles = {
@@ -29,18 +30,30 @@ const pageTitles = {
 const Header = ({ toggleSidebar, toggleMobileMenu }) => {
   const navigate = useNavigate();
   const location = useLocation();
-  const { data, update } = useData();
+  const { data, update, error: dataError } = useData();
+  const { user, logout } = useAuth();
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [highlight, setHighlight] = useState(0);
   const [notifOpen, setNotifOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
+  const [notificationError, setNotificationError] = useState('');
   const searchRef = useRef(null);
   const profileRef = useRef(null);
   const notifRef = useRef(null);
 
   const alerts = data.alerts || [];
   const unread = alerts.filter(a => a.status === 'unread').length;
+
+  const displayName = user?.full_name || user?.user_name || 'Operator';
+  const displayRole = user?.role || 'User';
+  const displayEmail = user?.email || '—';
+  const initials = displayName
+    .split(' ')
+    .filter(Boolean)
+    .slice(0, 2)
+    .map(part => part[0].toUpperCase())
+    .join('') || 'OP';
 
   const searchIndex = useMemo(() => {
     const index = [];
@@ -50,7 +63,7 @@ const Header = ({ toggleSidebar, toggleMobileMenu }) => {
     (data.groundStations || []).forEach(g => index.push({ id: `gs-${g.gs_id}`, label: g.gs_name, group: 'Ground Station', path: '/ground-stations' }));
     (data.antennas || []).forEach(a => index.push({ id: `ant-${a.ant_id}`, label: a.ant_name, group: 'Antenna', path: '/antennas' }));
     (data.frequencyBands || []).forEach(b => index.push({ id: `band-${b.band_id}`, label: b.band_name, group: 'Frequency Band', path: '/frequency-bands' }));
-    (data.communicationSessions || []).forEach(s => index.push({ id: `session-${s.session_id}`, label: s.session_id, group: 'Session', path: '/communication-sessions' }));
+    (data.communicationSessions || []).forEach(s => index.push({ id: `session-${s.session_id}`, label: String(s.session_id), group: 'Session', path: '/communication-sessions' }));
     (data.engineers || []).forEach(e => index.push({ id: `eng-${e.eng_id}`, label: e.eng_name, group: 'Engineer', path: '/engineers' }));
     (data.alerts || []).forEach(a => index.push({ id: `alert-${a.alert_id}`, label: a.description, group: 'Alert', path: '/alerts' }));
     (data.communicationWindows || []).forEach(w => index.push({ id: `window-${w.window_id}`, label: `Window #${w.window_id}`, group: 'Communication Window', path: '/communication-windows' }));
@@ -61,7 +74,7 @@ const Header = ({ toggleSidebar, toggleMobileMenu }) => {
   const results = useMemo(() => {
     if (!searchTerm.trim()) return [];
     const term = searchTerm.toLowerCase();
-    return searchIndex.filter(item => item.label.toLowerCase().includes(term)).slice(0, 8);
+    return searchIndex.filter(item => String(item.label || '').toLowerCase().includes(term)).slice(0, 8);
   }, [searchTerm, searchIndex]);
 
   useEffect(() => {
@@ -92,10 +105,10 @@ const Header = ({ toggleSidebar, toggleMobileMenu }) => {
   const handleSearchKeyDown = (e) => {
     if (e.key === 'ArrowDown') {
       e.preventDefault();
-      setHighlight(h => Math.min(h + 1, results.length - 1));
+      if (results.length) setHighlight(h => Math.min(h + 1, results.length - 1));
     } else if (e.key === 'ArrowUp') {
       e.preventDefault();
-      setHighlight(h => Math.max(h - 1, 0));
+      if (results.length) setHighlight(h => Math.max(h - 1, 0));
     } else if (e.key === 'Enter') {
       e.preventDefault();
       if (results[highlight]) goTo(results[highlight].path);
@@ -105,9 +118,20 @@ const Header = ({ toggleSidebar, toggleMobileMenu }) => {
     }
   };
 
-  const markRead = (alert, e) => {
+  const markRead = async (alert, e) => {
     e.stopPropagation();
-    update('alerts', 'alert_id', alert.alert_id, { status: 'acknowledged' });
+    setNotificationError('');
+
+    try {
+      await update('alerts', 'alert_id', alert.alert_id, { status: 'acknowledged' });
+    } catch (error) {
+      setNotificationError(error?.message || 'Unable to mark the alert as read.');
+    }
+  };
+
+  const handleLogout = () => {
+    setProfileOpen(false);
+    logout();
   };
 
   return (
@@ -161,9 +185,12 @@ const Header = ({ toggleSidebar, toggleMobileMenu }) => {
           )}
         </div>
 
-        <div className="connection-status disconnected" title="Using local mock data. No backend is configured.">
-          <WifiOff size={14} />
-          <span>Demo Mode</span>
+        <div
+          className={`connection-status ${dataError ? 'disconnected' : 'connected'}`}
+          title={dataError || 'Connected to the SATLINK backend API.'}
+        >
+          {dataError ? <WifiOff size={14} /> : <Wifi size={14} />}
+          <span>{dataError ? 'Offline' : 'Live'}</span>
         </div>
 
         <div className="notifications-wrapper" ref={notifRef}>
@@ -182,6 +209,9 @@ const Header = ({ toggleSidebar, toggleMobileMenu }) => {
                 <span>Notifications</span>
                 <span className="dropdown-count">{unread} unread</span>
               </div>
+              {notificationError && (
+                <div className="dropdown-error" role="alert">{notificationError}</div>
+              )}
               {alerts.length === 0 ? (
                 <div className="dropdown-empty">No notifications.</div>
               ) : (
@@ -226,25 +256,25 @@ const Header = ({ toggleSidebar, toggleMobileMenu }) => {
             aria-label="Open profile menu"
             aria-expanded={profileOpen}
           >
-            <div className="user-avatar">OP</div>
+            <div className="user-avatar">{initials}</div>
             <div className="user-info">
-              <div className="user-name">Operator</div>
-              <div className="user-role">Administrator</div>
+              <div className="user-name">{displayName}</div>
+              <div className="user-role">{displayRole}</div>
             </div>
             <ChevronDown size={16} className="user-chevron" />
           </button>
           {profileOpen && (
             <div className="dropdown-panel profile-panel">
               <div className="profile-header">
-                <div className="user-avatar large">OP</div>
+                <div className="user-avatar large">{initials}</div>
                 <div>
-                  <div className="profile-name">System Operator</div>
-                  <div className="profile-email">operator@satlink.local</div>
+                  <div className="profile-name">{displayName}</div>
+                  <div className="profile-email">{displayEmail}</div>
                 </div>
               </div>
               <div className="profile-role-row">
                 <span className="profile-role-label">Role</span>
-                <span className="profile-role-value">Administrator</span>
+                <span className="profile-role-value">{displayRole}</span>
               </div>
               <button className="dropdown-item" onClick={() => goTo('/users')}>
                 <User size={15} /> User directory
@@ -259,8 +289,8 @@ const Header = ({ toggleSidebar, toggleMobileMenu }) => {
               <button className="dropdown-item" onClick={() => goTo('/')}>
                 <Satellite size={15} /> Mission Control
               </button>
-              <button className="dropdown-item muted" disabled title="Authentication is not implemented in this frontend">
-                <LogOut size={15} /> Sign out (unavailable)
+              <button className="dropdown-item" onClick={handleLogout}>
+                <LogOut size={15} /> Sign out
               </button>
             </div>
           )}

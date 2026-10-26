@@ -38,7 +38,7 @@ const Weather = () => {
   return (
     <CrudPage
       title="Weather Records"
-      description="Ground station weather observations. Sample data for demonstration — not a live weather feed."
+      description="Ground station weather observations recorded in SATLINK."
       collection="weatherRecords"
       idKey="weather_id"
       columns={columns}

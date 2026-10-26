@@ -13,9 +13,16 @@ const Alerts = () => {
   const alerts = getAll('alerts');
   const [toast, setToast] = useState(null);
 
-  const setStatus = (alert, status) => {
-    update('alerts', 'alert_id', alert.alert_id, { status });
-    setToast({ message: `Alert #${alert.alert_id} ${status}`, type: status === 'resolved' ? 'success' : 'info' });
+  const setStatus = async (alert, status) => {
+    try {
+      await update('alerts', 'alert_id', alert.alert_id, { status });
+      setToast({ message: `Alert #${alert.alert_id} ${status}`, type: status === 'resolved' ? 'success' : 'info' });
+    } catch (error) {
+      setToast({
+        message: error?.message || 'Unable to update alert.',
+        type: 'error',
+      });
+    }
   };
 
   const columns = [
@@ -28,10 +35,10 @@ const Alerts = () => {
     { header: 'Actions', accessor: 'actions', sortable: false, render: (_, row) => (
       <div className="action-buttons">
         {row.status === 'unread' && (
-          <Button variant="ghost" size="sm" icon={CheckCircle} onClick={() => setStatus(row, 'acknowledged')}>Acknowledge</Button>
+          <Button variant="ghost" size="sm" icon={CheckCircle} onClick={() => { setStatus(row, 'acknowledged'); }}>Acknowledge</Button>
         )}
         {row.status !== 'resolved' && (
-          <Button variant="ghost" size="sm" icon={XCircle} onClick={() => setStatus(row, 'resolved')}>Resolve</Button>
+          <Button variant="ghost" size="sm" icon={XCircle} onClick={() => { setStatus(row, 'resolved'); }}>Resolve</Button>
         )}
         {row.status === 'resolved' && <span className="resolved-text">Resolved</span>}
       </div>
