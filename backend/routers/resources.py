@@ -279,6 +279,24 @@ SNAPSHOT_QUERIES = {
         FROM public.alert
         ORDER BY alert_time DESC, alert_id DESC
     """,
+    "bookingRequests": """
+        SELECT
+            request_id,
+            window_id,
+            antenna_id AS ant_id,
+            station_id AS gs_id,
+            frequency AS band_id,
+            scheduled_start AS start_time,
+            scheduled_end AS end_time,
+            lower(status) AS status,
+            requested_at,
+            reviewed_at,
+            reviewed_by,
+            rejection_reason,
+            session_id
+        FROM public.booking_request
+        ORDER BY requested_at DESC, request_id DESC
+    """,
     "users": """
         SELECT
             user_id,
@@ -735,6 +753,8 @@ def get_application_data(user: dict = Depends(get_current_user)):
             with conn.cursor(row_factory=dict_row) as cur:
                 snapshot = {}
                 for collection, query in SNAPSHOT_QUERIES.items():
+                    if collection == "bookingRequests" and user["role"] not in ("Admin", "Operator"):
+                        continue
                     cur.execute(query)
                     snapshot[collection] = cur.fetchall()
 
@@ -754,6 +774,12 @@ def create_record(
         raise HTTPException(404, "Unknown data collection")
 
     _authorize(collection, user)
+
+    if collection == "communicationSessions":
+        raise HTTPException(
+            405,
+            "Create a booking request through scheduling and obtain Admin approval",
+        )
 
     if collection == "schedulingRecommendations":
         raise HTTPException(

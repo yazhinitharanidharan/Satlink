@@ -11,6 +11,7 @@ import GroundStations from './pages/GroundStations';
 import Antennas from './pages/Antennas';
 import CommunicationWindows from './pages/CommunicationWindows';
 import Scheduling from './pages/Scheduling';
+import BookingApprovals from './pages/BookingApprovals';
 import CommunicationSessions from './pages/CommunicationSessions';
 import Engineers from './pages/Engineers';
 import Maintenance from './pages/Maintenance';
@@ -47,6 +48,7 @@ function App() {
           <Route path="/antennas" element={<Antennas />} />
           <Route path="/communication-windows" element={<CommunicationWindows />} />
           <Route path="/scheduling" element={<Scheduling />} />
+          <Route path="/booking-approvals" element={<BookingApprovals />} />
           <Route path="/communication-sessions" element={<CommunicationSessions />} />
           <Route path="/engineers" element={<Engineers />} />
           <Route path="/maintenance" element={<Maintenance />} />

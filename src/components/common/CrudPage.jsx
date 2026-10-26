@@ -15,8 +15,10 @@ const CrudPage = ({
   description,
   collection,
   idKey,
+  onCreate,
   columns,
   fields,
+  allowCreate = true,
   initialValues = {},
   summaryStats = [],
   filters = [],
@@ -108,10 +110,15 @@ const CrudPage = ({
       if (editing) {
         await update(collection, idKey, editing[idKey], processed);
         showToast(`${title} record updated`);
+
+      } else if (onCreate) {
+        const result = await onCreate(processed);
+        showToast(result?.message || `${title} request submitted`);
       } else {
         await create(collection, processed);
         showToast(`${title} record created`);
       }
+
       closeModal();
     } catch (error) {
       showToast(error?.message || `Unable to save ${title.toLowerCase()} record.`, 'error');
@@ -182,7 +189,7 @@ const CrudPage = ({
           <h1 className="page-title">{title}</h1>
           <p className="page-subtitle">{description}</p>
         </div>
-        <Button icon={Plus} onClick={openCreate}>Add {title.replace(/s$/, '')}</Button>
+        {allowCreate && (<Button icon={Plus} onClick={openCreate}>Add {title.replace(/s$/, '')}</Button>)}
       </div>
 
       {summaryStats.length > 0 && (

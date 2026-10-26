@@ -1,22 +1,23 @@
 import { NavLink } from 'react-router-dom';
-import { 
-  LayoutDashboard, 
-  Rocket, 
-  Satellite, 
-  Package, 
-  Radio, 
-  Antenna, 
-  Clock, 
-  Calendar, 
-  Activity, 
-  Users, 
-  Wrench, 
-  Cloud, 
-  RadioTower, 
-  BarChart3, 
-  Terminal, 
-  Bell, 
-  FileText, 
+import {
+  LayoutDashboard,
+  Rocket,
+  Satellite,
+  Package,
+  Radio,
+  Antenna,
+  Clock,
+  Calendar,
+  CheckCircle,
+  Activity,
+  Users,
+  Wrench,
+  Cloud,
+  RadioTower,
+  BarChart3,
+  Terminal,
+  Bell,
+  FileText,
   UserCog,
   ChevronLeft,
   ChevronRight,
@@ -52,6 +53,7 @@ const navGroups = [
     items: [
       { path: '/communication-windows', icon: Clock, label: 'Communication Windows' },
       { path: '/scheduling', icon: Calendar, label: 'Scheduling' },
+      { path: '/booking-approvals', icon: CheckCircle, label: 'Booking Approvals' },
       { path: '/communication-sessions', icon: Activity, label: 'Communication Sessions' },
       { path: '/scheduling-recommendations', icon: BarChart3, label: 'Scheduling Recommendations' },
     ]
@@ -89,8 +91,8 @@ const Sidebar = ({ collapsed, setCollapsed, mobileOpen, setMobileOpen }) => {
           <SatelliteDish size={24} className="logo-icon" />
           {!collapsed && <span className="logo-text">SATLINK</span>}
         </div>
-        <button 
-          className="sidebar-toggle" 
+        <button
+          className="sidebar-toggle"
           onClick={() => setCollapsed(!collapsed)}
           aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
         >
