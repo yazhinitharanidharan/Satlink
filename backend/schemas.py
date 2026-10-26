@@ -18,3 +18,22 @@ class SessionCreate(BaseModel):
                 "Scheduled end must be after scheduled start"
             )
         return self
+
+from datetime import date
+from typing import Optional
+
+
+class SatelliteCreate(BaseModel):
+    satellite_name: str = Field(min_length=1, max_length=150)
+    orbit_type: Optional[str] = Field(default=None, max_length=50)
+    launch_date: Optional[date] = None
+    health_status: str = Field(default="Active", max_length=30)
+    mission_id: int = Field(gt=0)
+
+
+class SatelliteUpdate(BaseModel):
+    satellite_name: str = Field(min_length=1, max_length=150)
+    orbit_type: Optional[str] = Field(default=None, max_length=50)
+    launch_date: Optional[date] = None
+    health_status: str = Field(default="Active", max_length=30)
+    mission_id: int = Field(gt=0)
