@@ -112,3 +112,7 @@ pytest
 - Command logs are records only; no commands are transmitted to spacecraft
 - Weather records are stored observations, not a live feed
 - Scheduling recommendations are stored suggestions, not a production AI service
+
+## Video Demonstration
+
+Youtube Link: https://youtu.be/uOUwR5WGLBE?si=6dhGJoWbQbFNIwS4
