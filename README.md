@@ -16,6 +16,8 @@ Satellite operations and ground station scheduling platform built with React, Fa
 
 ## Database Setup
 
+Designed and implemented the PostgreSQL database schema, including 18 entities, relationships, constraints and sample records.
+
 Create the database and load the schema from `backend/`:
 
 ```bash
